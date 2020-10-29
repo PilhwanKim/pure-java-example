@@ -5,11 +5,12 @@ import java.util.Random;
 public class MetricsMain {
     public static void main(String[] args) {
         Metrics metrics = new Metrics();
+        MinMaxMetrics minMaxMetrics = new MinMaxMetrics();
 
-        BusinessLogic businessLogicThread1 = new BusinessLogic(metrics);
-        BusinessLogic businessLogicThread2 = new BusinessLogic(metrics);
+        BusinessLogic businessLogicThread1 = new BusinessLogic(metrics, minMaxMetrics);
+        BusinessLogic businessLogicThread2 = new BusinessLogic(metrics, minMaxMetrics);
 
-        MetricsPrinter metricsPrinter = new MetricsPrinter(metrics);
+        MetricsPrinter metricsPrinter = new MetricsPrinter(metrics, minMaxMetrics);
 
         businessLogicThread1.start();
         businessLogicThread2.start();
@@ -18,9 +19,11 @@ public class MetricsMain {
 
     public static class MetricsPrinter extends Thread {
         private Metrics metrics;
+        private MinMaxMetrics minMaxMetrics;
 
-        public MetricsPrinter(Metrics metrics) {
+        public MetricsPrinter(Metrics metrics, MinMaxMetrics minMaxMetrics) {
             this.metrics = metrics;
+            this.minMaxMetrics = minMaxMetrics;
         }
 
         @Override
@@ -33,18 +36,22 @@ public class MetricsMain {
                 }
 
                 double average = metrics.getAverage();
+                long max = minMaxMetrics.getMax();
+                long min = minMaxMetrics.getMin();
 
-                System.out.println("Current Average is : " + average);
+                System.out.println("Current Average is : " + average + " Min is : " + min + " Max is : " + max);
             }
         }
     }
 
     public static class BusinessLogic extends Thread {
         private Metrics metrics;
+        private MinMaxMetrics minMaxMetrics;
         private Random random = new Random();
 
-        public BusinessLogic(Metrics metrics) {
+        public BusinessLogic(Metrics metrics, MinMaxMetrics minMaxMetrics) {
             this.metrics = metrics;
+            this.minMaxMetrics = minMaxMetrics;
         }
 
         @Override
@@ -59,7 +66,9 @@ public class MetricsMain {
 
                 long end = System.currentTimeMillis();
 
-                metrics.addSample(end - start);
+                long sample = end - start;
+                metrics.addSample(sample);
+                minMaxMetrics.addSample(sample);
             }
         }
     }
@@ -78,4 +87,42 @@ public class MetricsMain {
             return average;
         }
     }
+
+    public static class MinMaxMetrics {
+        private volatile long min;
+        private volatile long max;
+
+        /**
+         * Initializes all member variables
+         */
+        public MinMaxMetrics() {
+            min = Long.MAX_VALUE;
+            max = Long.MIN_VALUE;
+        }
+
+        /**
+         * Adds a new sample to our metrics.
+         */
+        public void addSample(long newSample) {
+            synchronized (this) {
+                min = Math.min(min, newSample);
+                max = Math.max(max, newSample);
+            }
+        }
+
+        /**
+         * Returns the smallest sample we've seen so far.
+         */
+        public long getMin() {
+            return min;
+        }
+
+        /**
+         * Returns the biggest sample we've seen so far.
+         */
+        public long getMax() {
+            return max;
+        }
+    }
+
 }
