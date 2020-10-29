@@ -17,7 +17,7 @@ import java.util.concurrent.Executors;
 
 public class ThroughputHttpServer {
     private static final String INPUT_FILE = "./http-server/war_and_peace.txt";
-    public static final int NUMBER_OF_THREADS = 1;
+    public static final int NUMBER_OF_THREADS = 8;
 
     public static void main(String[] args) throws IOException, URISyntaxException {
         String text = new String(Files.readAllBytes(Paths.get(Utils.getFileFromResource(INPUT_FILE))));
